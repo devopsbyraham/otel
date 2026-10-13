@@ -1,0 +1,70 @@
+services:
+  order-service:
+    build: ./services/order
+    environment:
+      SERVICE_NAME: order-service
+      INVENTORY_URL: http://inventory-service:8000
+      PAYMENT_URL: http://payment-service:8000
+      SHIPPING_URL: http://shipping-service:8000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    ports: ["8001:8000"]
+    depends_on: [inventory-service, payment-service, shipping-service, otel-collector]
+
+  inventory-service:
+    build: ./services/inventory
+    environment:
+      SERVICE_NAME: inventory-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    ports: ["8002:8000"]
+    depends_on: [otel-collector]
+
+  payment-service:
+    build: ./services/payment
+    environment:
+      SERVICE_NAME: payment-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    ports: ["8003:8000"]
+    depends_on: [otel-collector]
+
+  shipping-service:
+    build: ./services/shipping
+    environment:
+      SERVICE_NAME: shipping-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    ports: ["8004:8000"]
+    depends_on: [otel-collector]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.136.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
+    ports: ["4317:4317", "4318:4318"]
+    depends_on: [jaeger]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: ["16686:16686", "4319:4317"]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    depends_on: [order-service, inventory-service, payment-service, shipping-service]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on: [prometheus]
