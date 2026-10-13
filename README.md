@@ -10,22 +10,22 @@ A teaching lab for distributed traces, latency, request metrics, errors, and inc
 - Grafana is connected to Prometheus as a datasource.
 
 ## Requirements
-- Docker Desktop or Docker Engine with the Docker Compose plugin.
+- Docker Desktop or Docker Engine with the docker-compose plugin.
 - Ports 3000, 8001-8004, 9090, 16686, 4317 and 4318 available.
 
 ## 1. Start the lab
 From this folder:
 
 ```bash
-docker compose up --build -d
-docker compose ps
+docker-compose up --build -d
+docker-compose ps
 ```
 
 Give the containers 30-60 seconds to initialize. If anything fails:
 ```bash
-docker compose logs -f order-service
-docker compose logs -f otel-collector
-docker compose logs -f jaeger
+docker-compose logs -f order-service
+docker-compose logs -f otel-collector
+docker-compose logs -f jaeger
 ```
 
 ## 2. Create normal traffic
@@ -101,23 +101,23 @@ If the graph is empty, send traffic first and wait for at least one scrape inter
 2. Run 5 slow-payment requests. Find the longest span and estimate the payment contribution.
 3. Compare p95 before and after slow requests.
 4. Trigger each failure. Identify the first failing service and the HTTP status.
-5. Stop the payment container (`docker compose stop payment-service`) and observe the order-service error/trace. Restart it (`docker compose start payment-service`).
+5. Stop the payment container (`docker-compose stop payment-service`) and observe the order-service error/trace. Restart it (`docker-compose start payment-service`).
 6. Stop shipping and observe the effect.
 7. Change `slow_payment` from 2.0 seconds to 4.0 seconds in `services/payment/app.py`, rebuild, and measure again.
 8. Add a `quantity` attribute to the order span and inspect it in Jaeger. Do not add customer names, emails, tokens, or payment card data to span attributes.
 
 ## 9. Troubleshooting
-- `docker compose ps`: see whether all services are running.
-- `docker compose logs -f <service-name>`: inspect container logs.
+- `docker-compose ps`: see whether all services are running.
+- `docker-compose logs -f <service-name>`: inspect container logs.
 - No traces: verify the collector is running and check its logs. Wait a few seconds for batch export.
 - No metrics: open `http://localhost:8001/metrics`; ensure Prometheus targets are UP at `http://localhost:9090/targets`.
 - Jaeger is at `http://localhost:16686`.
 - This is a local teaching demo, not a production-ready deployment. It uses demo responses, simple in-memory metrics, no authentication, and no real payment provider.
 ## 10. Stop the lab
 ```bash
-docker compose down
+docker-compose down
 ```
 To remove persisted container state too (not needed for this lab):
 ```bash
-docker compose down -v
+docker-compose down -v
 ```
